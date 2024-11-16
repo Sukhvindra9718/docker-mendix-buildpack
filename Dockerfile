@@ -53,7 +53,7 @@ COPY $BUILD_PATH /opt/mendix/build
 RUN chmod +rx /opt/mendix/buildpack/bin/bootstrap-python && /opt/mendix/buildpack/bin/bootstrap-python /opt/mendix/buildpack /tmp/buildcache
 
 # Add the buildpack modules
-ENV PYTHONPATH "$PYTHONPATH:/opt/mendix/buildpack/lib/:/opt/mendix/buildpack/:/opt/mendix/buildpack/lib/python3.6/site-packages/"
+ENV PYTHONPATH "$PYTHONPATH:/opt/mendix/buildpack/lib/:/opt/mendix/buildpack/:/opt/mendix/buildpack/lib/python3.8/site-packages/"
 
 # Use nginx supplied by the base OS
 ENV NGINX_CUSTOM_BIN_PATH=/usr/sbin/nginx
@@ -75,6 +75,17 @@ RUN mkdir -p /tmp/buildcache /tmp/cf-deps /var/mendix/build /var/mendix/build/.l
     ln -s /opt/mendix/.java /opt/mendix/build &&\
     chown -R ${USER_UID}:0 /opt/mendix /var/mendix &&\
     chmod -R g=u /opt/mendix /var/mendix
+
+    # Download and extract mxbuild
+RUN mkdir -p /opt/mendix/build/.local/mxbuild/modeler && \
+curl -fsSL https://cdn.mendix.com/runtime/mxbuild-10.0.0.9976.tar.gz -o /tmp/mxbuild.tar.gz && \
+tar -xzvf /tmp/mxbuild.tar.gz -C /opt/mendix/build/.local/mxbuild/modeler --strip-components=1 && \
+rm /tmp/mxbuild.tar.gz
+
+RUN chmod -R +x /opt/mendix/build/.local/mxbuild/modeler
+
+RUN apt-get update && apt-get install -y mono-complete openjdk-11-jdk && \
+    rm -rf /var/lib/apt/lists/*
 
 FROM ${ROOTFS_IMAGE}
 LABEL Author="Mendix Digital Ecosystems"
@@ -99,7 +110,7 @@ RUN if [ "$UNINSTALL_BUILD_DEPENDENCIES" = "true" ] && grep -q ubuntu /etc/os-re
     fi
 
 # Add the buildpack modules
-ENV PYTHONPATH "/opt/mendix/buildpack/lib/:/opt/mendix/buildpack/:/opt/mendix/buildpack/lib/python3.6/site-packages/"
+ENV PYTHONPATH "/opt/mendix/buildpack/lib/:/opt/mendix/buildpack/:/opt/mendix/buildpack/lib/python3.8/site-packages/"
 
 # Copy start scripts
 COPY scripts/startup scripts/vcap_application.json /opt/mendix/build/
